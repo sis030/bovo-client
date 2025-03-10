@@ -1,11 +1,11 @@
-import { useState} from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Box, Button, TextField, Typography, Container } from "@mui/material";
 import axios from "axios";
 import kakaoBtn from "../../assets/button/btn_kakao.png";
 
-
 axios.defaults.withCredentials = true;
+
 
 const Login = () => {
     const navigate = useNavigate();
@@ -15,14 +15,71 @@ const Login = () => {
     const [passwordError, setPasswordError] = useState("");
     const [errorMessage, setErrorMessage] = useState("");
 
+    const refreshAccessToken = async () => {
+        try {
+            const response = await axios.post(
+                "https://3fde-112-158-33-80.ngrok-free.app/refresh-token",
+                {}, 
+                {
+                    withCredentials: true,
+                }
+            );
+
+            if (response.status === 200) {
+                console.log("Access Token 갱신 성공:", response.data);
+                const newAccessToken = response.data.access_token;
+
+                if (newAccessToken) {
+                    sessionStorage.setItem("AccessToken", newAccessToken); 
+                    axios.defaults.headers.common["Authorization"] = `Bearer ${newAccessToken}`; 
+                }
+            }
+        } catch (error) {
+            console.error("Access Token 갱신 실패:", error);
+            sessionStorage.removeItem("AccessToken"); 
+            navigate("/login"); 
+        }
+    };
+
+    axios.interceptors.response.use(
+        (response) => response,
+        async (error) => {
+            const originalRequest = error.config;
+    
+            if (error.response && error.response.status === 401 && !originalRequest._retry) {
+                originalRequest._retry = true; 
+    
+                try {
+                    await refreshAccessToken(); 
+                    const newAccessToken = sessionStorage.getItem("AccessToken"); 
+                    axios.defaults.headers.common["Authorization"] = `Bearer ${newAccessToken}`;
+                    
+                    originalRequest.headers["Authorization"] = `Bearer ${newAccessToken}`; 
+                    return axios(originalRequest);
+                } catch (refreshError) {
+                    console.error("토큰 갱신 중 오류 발생:", refreshError);
+                    return Promise.reject(refreshError); 
+                }
+            }
+    
+            return Promise.reject(error);
+        }
+    );
+
+    useEffect(() => {
+        const accessToken = sessionStorage.getItem("AccessToken");
+        if (accessToken) {
+            axios.defaults.headers.common["Authorization"] = `Bearer ${accessToken}`;
+        }
+    }, []);
+
     const handleSignUp = () => {
-        navigate("/sign-up/step1");
+        navigate("/sign-up/basic");
     };
 
     const handleLogin = async () => {
         setEmailError("");
         setPasswordError("");
-    
 
         try {
             const response = await axios.post(
@@ -38,6 +95,13 @@ const Login = () => {
 
             if (response.status === 200) {
                 console.log("로그인 성공:", response.data);
+
+                const accessToken = response.data.access_token;
+                if (accessToken) {
+                    sessionStorage.setItem("AccessToken", accessToken);
+                    axios.defaults.headers.common["Authorization"] = `Bearer ${accessToken}`;
+                }
+
                 navigate("/");
             }
         } catch (error) {
@@ -45,7 +109,7 @@ const Login = () => {
             if (error.response) {
                 console.log("응답 데이터:", error.response.data);
                 console.log("응답 상태 코드:", error.response.status);
-                
+
                 if (error.response.status === 404) {
                     setErrorMessage("등록되지 않은 이메일입니다.");
                 } else if (error.response.status === 401) {
@@ -58,6 +122,8 @@ const Login = () => {
             }
         }
     };
+
+
 
 
     return (

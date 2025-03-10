@@ -1,29 +1,59 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { Box, Typography, Button, Modal } from "@mui/material";
 import HourglassBottomIcon from "@mui/icons-material/HourglassBottom";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import NoteCompleteModal from "./NoteCompleteModal";
+import axios from "axios"; 
 
-const NoteStateModal = ({ open, onClose, book }) => {
+const API_URL = import.meta.env.VITE_BACKEND_SEARCH_API_URL;
+
+const NoteStateModal = ({ open, onClose, book, userId }) => {
     const [selectedState, setSelectedState] = useState(null);
     const [isRegisterCompleteOpen, setIsRegisterCompleteOpen] = useState(false);
-    const navigate = useNavigate();
+    const [loading, setLoading] = useState(false); 
 
     const handleSelect = (state) => {
         setSelectedState(state);
     };
 
-    const handleRegister = () => {
-        if (!selectedState) return;
-        setIsRegisterCompleteOpen(true);
-    };
+    console.log("NoteStateModal - book:", book);
+    console.log("NoteStateModal - book?.id:", book?.id);
 
-    const handleMoveToArchive = () => {   
-        if (selectedState === "ing") navigate("/Archive");
-        else if (selectedState === "end") navigate("/Archive");
-        else if (selectedState === "wish") navigate("/Archive");
+    const handleRegister = async () => {
+        if (!selectedState || !book?.id || !userId) {
+            console.log('데이터 입력 에러');
+            console.log("selectedState:", selectedState);
+            console.log("book?.id:", book?.id);
+            console.log("userId:", userId);
+            return;
+        }
+
+        setLoading(true); 
+
+        try {
+            const response = await axios.post(
+                `${API_URL}/save/${book.id}`, 
+                {
+                    book_id: book.id,
+                    is_complete_reading: selectedState, 
+                },
+                {
+                    headers: {
+                        user_id: userId, 
+                        "Content-Type": "application/json",
+                    },
+                }
+            );
+
+            if (response.status === 201) {
+                setIsRegisterCompleteOpen(true); 
+            }
+        } catch (error) {
+            console.error("도서 상태 저장 실패:", error);
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -120,22 +150,22 @@ const NoteStateModal = ({ open, onClose, book }) => {
                     <Button
                         variant="contained"
                         onClick={handleRegister}
-                        disabled={!selectedState} 
+                        disabled={!selectedState || loading} 
                         sx={{
                             fontSize: "2.2rem",
                             fontWeight: "600",
-                            backgroundColor: "#BDE5F1", 
+                            backgroundColor: loading ? "#A5D8E8" : "#BDE5F1", 
                             padding: "1rem",
                             borderRadius: "0.8rem",
                             boxShadow:"none",
                             width: "100%",
                             marginBottom: "1rem",
                             "&:hover": {
-                                backgroundColor: "#A5D8E8",
+                                backgroundColor: loading ? "#A5D8E8" : "#A5D8E8",
                             },
                         }}
                     >
-                        기록하기
+                        {loading ? "기록 중..." : "기록하기"}
                     </Button>
                 </Box>
             </Modal>
@@ -144,7 +174,6 @@ const NoteStateModal = ({ open, onClose, book }) => {
                 open={isRegisterCompleteOpen} 
                 onClose={() => setIsRegisterCompleteOpen(false)} 
                 book={book} 
-                onMoveToArchive={handleMoveToArchive}
             />
         </>
     );

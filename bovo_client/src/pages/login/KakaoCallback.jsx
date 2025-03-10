@@ -9,23 +9,38 @@ const KakaoCallback = () => {
 
     useEffect(() => {
         const urlParams = new URLSearchParams(window.location.search);
-        const authCode = urlParams.get("code"); //인가 코드 입력
+        const authCode = urlParams.get("code");
 
         if (authCode) {
-            axios.post(`${API_URL}/kakao/bovocallback`, { code: authCode }, { withCredentials: true })  // 쿠키 
-                .then((response) => {
-                    const { isNewUser } = response.data;
+            axios.post(
+                `${API_URL}/kakao/login`, 
+                { code: authCode }, 
+                { withCredentials: true } 
+            )
+            .then((response) => {
+                console.log("카카오 로그인 성공:", response.data);
 
-                    if (isNewUser) {
-                        navigate("/sign-up/step1"); 
-                    } else {
-                        navigate("/"); 
-                    }
-                })
-                .catch((error) => {
-                    console.error("카카오 로그인 실패:", error);
-                    navigate("/login"); 
-                });
+                const accessToken = response.data.access_token;
+                if (accessToken) {
+                    sessionStorage.setItem("AccessToken", accessToken);
+                    axios.defaults.headers.common["Authorization"] = `Bearer ${accessToken}`;
+                }
+
+                const { isNewUser, kakaoId, nickname, profileImage } = response.data;
+                sessionStorage.setItem("kakaoId", kakaoId);
+                sessionStorage.setItem("nickname", nickname);
+                sessionStorage.setItem("profileImage", profileImage);
+                
+                if (isNewUser) {
+                    navigate("/sign-up/kakao");
+                } else {
+                    navigate("/");
+                }
+            })
+            .catch((error) => {
+                console.error("카카오 로그인 실패:", error);
+                navigate("/login");
+            });
         }
     }, [navigate]);
 

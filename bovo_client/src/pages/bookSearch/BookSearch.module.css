@@ -35,6 +35,15 @@
     min-width: 8rem;
 }
 
+.bookListWrapper{
+    max-height: 65rem;
+    overflow-y: auto;
+}
+
+.bookListWrapper::-webkit-scrollbar {
+    display: none;
+}
+
 .bookGrid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);

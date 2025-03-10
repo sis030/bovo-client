@@ -35,6 +35,8 @@ const BookSearchDetail = () => {
         setIsForumModalOpen(false);
     };
 
+    console.log("BookSearchDetail - book:", book);
+
     return (
         <Box className={styles.container}>
             <Box className={styles.bookInfoContainer}>
@@ -122,7 +124,7 @@ const BookSearchDetail = () => {
                         color: "#5F5F5F",
                     }}
                 >
-                    토론방 등록
+                    토론방 만들기
                 </Button>
 
                 <Button
@@ -195,7 +197,8 @@ const BookSearchDetail = () => {
                 </Typography>
             </Box>
 
-            <NoteStateModal open={isModalOpen} onClose={handleCloseModal} book={book}/>
+            {/* <NoteStateModal open={isModalOpen} onClose={handleCloseModal} book={book}/> */}
+            <NoteStateModal open={isModalOpen} onClose={handleCloseModal} book={{ ...book, id: book.isbn }} />
             <ForumCompleteModal open={isForumModalOpen} onClose={handleCloseForumModal} book={book} />
         </Box>
     );

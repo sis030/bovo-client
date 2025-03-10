@@ -71,7 +71,7 @@ const ForumCompleteModal = ({ open, onClose, book }) => {
                         marginBottom: "1rem",
                     }}
                 >
-                    토론방 등록하기
+                    토론방 만들러가기
                 </Button>
             </Box>
         </Modal>

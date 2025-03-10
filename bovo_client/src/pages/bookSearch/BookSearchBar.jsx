@@ -12,7 +12,7 @@ const BookSearchBar = ({ searchTerm, setSearchTerm }) => {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 sx={{
-                    "& .MuiOutlinedInput-root": { border: "none", boxShadow: "none", backgroundColor: "transparent", height: "5rem"},
+                    "& .MuiOutlinedInput-root": { border: "none", boxShadow: "none", backgroundColor: "transparent", height: "4rem"},
                     "& .MuiOutlinedInput-notchedOutline": { border: "none",},
                     "& .MuiInputBase-input": { fontSize: "1.7rem", padding: "0.5rem 1rem"}
                 }}

@@ -1,19 +1,21 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { Box, FormControl, MenuItem, Select, Typography } from "@mui/material";
+import { Box, FormControl, MenuItem, Select, Typography, Button } from "@mui/material";
 import BookSearchBar from "./BookSearchBar";
 import BookList from "./BookList";
 import styles from "./BookSearch.module.css";
 
-const SEARCH_API = import.meta.env.VITE_KAKAO_SEARCH_API_KEY;
+const SEARCH_API = import.meta.env.VITE_BACKEND_SEARCH_API_URL;
 
 const BookSearch = () => {
     const [books, setBooks] = useState([]); 
     const [sort, setSort] = useState("accuracy");
     const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
+    const [currentPage, setCurrentPage] = useState(1); 
+    const [hasMore, setHasMore] = useState(true); 
 
-    const fetchBooks = async (query) => {
+    const fetchBooks = async (query, page = 1) => {
         if (!query.trim()) { 
             setBooks([]); 
             return;
@@ -24,25 +26,42 @@ const BookSearch = () => {
             const response = await axios.get("https://dapi.kakao.com/v3/search/book?target=title", {
                 params: {
                     query: query,
-                    sort: sort, 
-                    page: 1,
-                    size: 12, 
+                    sort: sort,
+                    page: page, 
+                    size: 10, 
                 },
                 headers: {
                     Authorization: `KakaoAK ${SEARCH_API}`,
                 },
+
             });
 
-            setBooks(response.data.documents); 
+            if (page === 1) {
+                setBooks(response.data.documents);
+            } else {
+                setBooks((prevBooks) => [...prevBooks, ...response.data.documents]); 
+            }
+
+
+            setHasMore(response.data.documents.length > 0);
         } catch (error) {
             console.error("도서 검색 API 오류:", error);
         }
         setLoading(false);
     };
 
+
     useEffect(() => {
-        fetchBooks(searchTerm);
+        setCurrentPage(1); 
+        fetchBooks(searchTerm, 1);
     }, [searchTerm, sort]); 
+
+
+    const loadMoreBooks = () => {
+        const nextPage = currentPage + 1;
+        setCurrentPage(nextPage);
+        fetchBooks(searchTerm, nextPage);
+    };
 
     return (
         <Box className={styles.container}>
@@ -79,9 +98,6 @@ const BookSearch = () => {
                                     borderRadius: "0.4rem",
                                     boxShadow: "0px 4px 10px rgba(0, 0, 0, 0.1)", 
                                     backgroundColor: "white",
-                                    // borderRadius: "0",
-                                    // boxShadow: "none",
-                                    // 만약 border 제거할거라면 사용
                                 },
                                 "& .MuiMenuItem-root": {
                                     fontSize: "1.5rem",
@@ -100,6 +116,28 @@ const BookSearch = () => {
             </Box>
 
             <BookList books={books} loading={loading} searchTerm={searchTerm} />
+
+
+            {hasMore && !loading && (
+                <Box sx={{ display: "flex", justifyContent: "center", marginTop: "1rem" }}>
+                    <Button 
+                        onClick={loadMoreBooks} 
+                        sx={{
+                            fontSize: "1.5rem",
+                            fontWeight: "500",
+                            padding: "0.8rem 2rem",
+                            backgroundColor: "#007BFF",
+                            color: "white",
+                            borderRadius: "5px",
+                            "&:hover": {
+                                backgroundColor: "#0056b3",
+                            }
+                        }}
+                    >
+                        더보기
+                    </Button>
+                </Box>
+            )}
         </Box>
     );
 };
